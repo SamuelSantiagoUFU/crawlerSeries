@@ -12,5 +12,5 @@ soupsieve==2.0.1
 starlette==0.13.6
 urllib3==1.25.11
 uvicorn==0.12.2
-
 python-dotenv==0.15.0
+selenium==3.141.0
