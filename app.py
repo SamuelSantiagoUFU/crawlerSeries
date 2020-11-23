@@ -1,5 +1,6 @@
 from crawler.big_bang_theory import BigBangTheory as BigBang
 from crawler.the_good_doctor import TheGoodDoctor as GoodDoc
+from crawler.simpsons import Simpsons
 
 from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
@@ -23,10 +24,26 @@ async def get_big_bang_theory(season: int):
             content={"message": str(e)}
         )
 
+"""
 @app.get("/the-good-doctor/{season}")
 async def get_the_good_doctor(season: int):
     try:
         crawler = GoodDoc(season, "The Good Doctor")
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={"downloaded_episodes": crawler.run().dict()}
+        )
+    except Exception as e:
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"message": str(e)}
+        )
+"""
+
+@app.get("/simpsons/{season}")
+async def get_simpsons(season: int):
+    try:
+        crawler = Simpsons(season, "Os Simpsons")
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content={"downloaded_episodes": crawler.run().dict()}

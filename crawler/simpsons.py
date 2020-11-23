@@ -3,13 +3,12 @@ import re
 import shutil
 from datetime import datetime
 from glob import glob
-from pprint import pp
 
 import requests
 from bs4 import BeautifulSoup
 
 from models.episodes import Episode, Episodes
-from crawler.utils.season_utils import episodes_wikipedia
+from crawler.utils.season_utils import Season
 
 
 class Simpsons:
@@ -17,6 +16,10 @@ class Simpsons:
         self.season = season
         self.destination_folder = f"{os.getenv('BASE_DESTINATION')}{os.path.sep}{destination}"
         self.response = Episodes()
+        self.session = requests.Session()
+
+        if not os.path.exists(self.destination_folder):
+            os.mkdir(self.destination_folder)
 
     def run(self):
         try:
@@ -27,25 +30,22 @@ class Simpsons:
         return self.response
 
     def _crawl(self):
-        self.session = requests.Session()
-        resp = self.session.get(f"https://animezeira.site/os-simpsons/")
+        resp = self.session.get("https://animezeira.site/os-simpsons/")
         if self.season <= 15:
-            episodes = episodes_wikipedia(
+            episodes = Season.episodes_wikipedia(
                 "https://pt.wikipedia.org/wiki/Lista_de_episódios_de_Os_Simpsons_(temporadas_1–15)", self.season)
         else:
-            episodes = episodes_wikipedia(
+            episodes = Season.episodes_wikipedia(
                 "https://pt.wikipedia.org/wiki/Lista_de_episódios_de_Os_Simpsons_(temporadas_16_–_presente)", self.season, 15)
         # getting all episodes
         bs = BeautifulSoup(resp.text, "lxml")
-        pp(episodes)
-        episodes_list = bs.find("ul", {"class": "episodios"}).find_all("li")[episodes['first']-1]
-        pp(episodes_list)
-        return
+        episodes_list = [li.a for li in bs.find("ul", {"class": "episodios"}).find_all("li")
+                         if Season.episode_exist(li.a.span.text, episodes)]
         total_size = 0
+        l = re.compile(r"^Os Simpsons - Epis[oó]dio\s*(\d*).*", re.I | re.M)
         for ep in episodes_list:
-            number_ep = ep.find("div", {"class": "n-ep"}).text.strip()
-            a = ep.find("div", {"class": "video-thumb"}).find("a")
-            if (episode := self._get_episode(a["href"], int(number_ep))) is not None:
+            number_ep = l.match(ep["title"]).group(1)
+            if (episode := self._get_episode(ep["href"], int(number_ep))) is not None:
                 total_size += episode.size
                 self.response.episodes.append(episode)
         self.response.total_size = total_size
@@ -57,7 +57,7 @@ class Simpsons:
 
         resp = self.session.get(link)
         bs = BeautifulSoup(resp.text, "lxml")
-        video = bs.find("div", {"class": "embed-responsive embed-responsive-16by9"}).video
+        video = bs.find("div", {"id": "video-3"}).video
         source = re.match(r".*(https://.+)\s*$", video.source['src']).group(1)
         resp = self.session.get(source, stream=True)
 
@@ -87,5 +87,5 @@ if __name__ == "__main__":
     from dotenv import load_dotenv, find_dotenv
 
     load_dotenv(find_dotenv())
-    crawler = Simpsons(19, "Big Bang Theory")
+    crawler = Simpsons(1, "Os Simpsons")
     crawler.run()

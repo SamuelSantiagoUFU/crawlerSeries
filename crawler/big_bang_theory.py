@@ -76,5 +76,5 @@ if __name__ == "__main__":
     from dotenv import load_dotenv, find_dotenv
 
     load_dotenv(find_dotenv())
-    crawler = BigBangTheory(6, "Big Bang Theory")
+    crawler = BigBangTheory(8, "Big Bang Theory")
     crawler.run()
